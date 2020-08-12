@@ -7,11 +7,15 @@
 
 package com.facebook.fresco.vito.core;
 
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.drawee.drawable.FadeDrawable;
+import com.facebook.drawee.drawable.ScaleTypeDrawable;
+import com.facebook.drawee.drawable.ScalingUtils;
 import com.facebook.drawee.drawable.VisibilityCallback;
 import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.infer.annotation.OkToExtend;
@@ -29,14 +33,12 @@ public class BaseFrescoDrawable extends FadeDrawable implements Closeable {
   private static final int PROGRESS_DRAWABLE_INDEX = 2;
   private static final int OVERLAY_DRAWABLE_INDEX = 3;
 
+  private @Nullable Rect mViewportDimensions;
+
   private @Nullable VisibilityCallback mVisibilityCallback;
 
   public BaseFrescoDrawable() {
-    super(new Drawable[LAYER_COUNT], true);
-  }
-
-  public BaseFrescoDrawable(boolean allLayersVisible) {
-    super(new Drawable[LAYER_COUNT], allLayersVisible);
+    super(new Drawable[LAYER_COUNT], false);
   }
 
   public @Nullable Drawable setImage(
@@ -104,5 +106,28 @@ public class BaseFrescoDrawable extends FadeDrawable implements Closeable {
 
   public Drawable getOverlayDrawable() {
     return getDrawable(OVERLAY_DRAWABLE_INDEX);
+  }
+
+  @Nullable
+  public Rect getViewportDimensions() {
+    return mViewportDimensions;
+  }
+
+  public void setViewportDimensions(@Nullable Rect viewportDimensions) {
+    mViewportDimensions = viewportDimensions;
+  }
+
+  public @Nullable ScalingUtils.ScaleType getActualImageScaleType() {
+    Drawable actual = getDrawable(IMAGE_DRAWABLE_INDEX);
+    if (!(actual instanceof ScaleTypeDrawable)) return null;
+
+    return ((ScaleTypeDrawable) actual).getScaleType();
+  }
+
+  public @Nullable PointF getActualImageFocusPoint() {
+    Drawable actual = getDrawable(IMAGE_DRAWABLE_INDEX);
+    if (!(actual instanceof ScaleTypeDrawable)) return null;
+
+    return ((ScaleTypeDrawable) actual).getFocusPoint();
   }
 }

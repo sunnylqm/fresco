@@ -31,10 +31,6 @@ public abstract class FrescoDrawable2 extends BaseFrescoDrawable
         DeferredReleaser.Releasable,
         DataSubscriber<CloseableReference<CloseableImage>> {
 
-  protected FrescoDrawable2(boolean allLayersVisible) {
-    super(allLayersVisible);
-  }
-
   @Override
   @Nullable
   public Drawable setImage(
@@ -111,4 +107,8 @@ public abstract class FrescoDrawable2 extends BaseFrescoDrawable
   @Override
   public abstract void onProgressUpdate(
       @Nonnull DataSource<CloseableReference<CloseableImage>> dataSource);
+
+  public abstract @Nullable Object getExtras();
+
+  public abstract void setExtras(@Nullable Object extras);
 }

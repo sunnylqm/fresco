@@ -404,13 +404,6 @@ public class ImagePipeline {
     return prefetchToBitmapCache(imageRequest, callerContext, Priority.MEDIUM);
   }
 
-  /** Experimental prefetch method. Do not use as it can be removed in the future */
-  @Deprecated
-  public DataSource<Void> prefetchToBitmapCacheWithHighPriority(
-      ImageRequest imageRequest, Object callerContext) {
-    return prefetchToBitmapCache(imageRequest, callerContext, Priority.HIGH);
-  }
-
   private DataSource<Void> prefetchToBitmapCache(
       ImageRequest imageRequest, Object callerContext, Priority priority) {
     if (!mIsPrefetchEnabledSupplier.get()) {
@@ -641,6 +634,39 @@ public class ImagePipeline {
   }
 
   /**
+   * Returns whether the image is stored in the encoded memory cache.
+   *
+   * @param uri the uri for the image to be looked up.
+   * @return true if the image was found in the encoded memory cache, false otherwise
+   */
+  public boolean isInEncodedMemoryCache(final Uri uri) {
+    if (uri == null) {
+      return false;
+    }
+    Predicate<CacheKey> encodedCachePredicate = predicateForUri(uri);
+    return mEncodedMemoryCache.contains(encodedCachePredicate);
+  }
+
+  /**
+   * Returns whether the image is stored in the encoded memory cache.
+   *
+   * @param imageRequest the imageRequest for the image to be looked up.
+   * @return true if the image was found in the encoded memory cache, false otherwise.
+   */
+  public boolean isInEncodedMemoryCache(final ImageRequest imageRequest) {
+    if (imageRequest == null) {
+      return false;
+    }
+    final CacheKey cacheKey = mCacheKeyFactory.getEncodedCacheKey(imageRequest, null);
+    CloseableReference<PooledByteBuffer> ref = mEncodedMemoryCache.get(cacheKey);
+    try {
+      return CloseableReference.isValid(ref);
+    } finally {
+      CloseableReference.closeSafely(ref);
+    }
+  }
+
+  /**
    * Returns whether the image is stored in the disk cache. Performs disk cache check synchronously.
    * It is not recommended to use this unless you know what exactly you are doing. Disk cache check
    * is a costly operation, the call will block the caller thread until the cache check is
@@ -739,7 +765,7 @@ public class ImagePipeline {
   }
   /** @return {@link CacheKey} for doing bitmap cache lookups in the pipeline. */
   @Nullable
-  public CacheKey getCacheKey(@Nullable ImageRequest imageRequest, Object callerContext) {
+  public CacheKey getCacheKey(@Nullable ImageRequest imageRequest, @Nullable Object callerContext) {
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.beginSection("ImagePipeline#getCacheKey");
     }
@@ -907,6 +933,13 @@ public class ImagePipeline {
       return new ForwardingRequestListener(
           mRequestListener, requestListener, imageRequest.getRequestListener());
     }
+  }
+
+  public RequestListener getCombinedRequestListener(@Nullable RequestListener listener) {
+    if (listener == null) {
+      return mRequestListener;
+    }
+    return new ForwardingRequestListener(mRequestListener, listener);
   }
 
   private Predicate<CacheKey> predicateForUri(final Uri uri) {

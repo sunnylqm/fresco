@@ -6,6 +6,7 @@
  */
 
 import com.facebook.fresco.buildsrc.Deps
+import com.facebook.fresco.buildsrc.TestDeps
 
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
@@ -14,13 +15,13 @@ dependencies {
     compileOnly Deps.jsr305
     compileOnly Deps.javaxAnnotation
 
-    implementation "com.parse.bolts:bolts-tasks:${BOLTS_ANDROID_VERSION}"
+    implementation Deps.Bolts.tasks
     implementation project(':static-webp')
     implementation project(':animated-base')
 
     testImplementation project(':imagepipeline-base-test')
     testImplementation project(':imagepipeline-test')
-    testImplementation "junit:junit:${JUNIT_VERSION}"
+    testImplementation TestDeps.junit
     testImplementation "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
     testImplementation("org.powermock:powermock-api-mockito2:${POWERMOCK_VERSION}") {
         exclude group: 'org.mockito', module: 'mockito-all'
@@ -37,11 +38,11 @@ apply from: rootProject.file('release.gradle')
 android {
 
     buildToolsVersion FrescoConfig.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.minSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
     }
 
     sourceSets {

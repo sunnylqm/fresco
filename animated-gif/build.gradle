@@ -6,13 +6,14 @@
  */
 
 import com.facebook.fresco.buildsrc.Deps
+import com.facebook.fresco.buildsrc.TestDeps
 
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 dependencies {
     compileOnly Deps.jsr305
-    implementation "com.parse.bolts:bolts-tasks:${BOLTS_ANDROID_VERSION}"
+    implementation Deps.Bolts.tasks
     compileOnly Deps.javaxAnnotation
     implementation Deps.SoLoader.nativeloader
     implementation project(':fbcore')
@@ -20,7 +21,7 @@ dependencies {
 
     testImplementation project(':imagepipeline-base-test')
     testImplementation project(':imagepipeline-test')
-    testImplementation "junit:junit:${JUNIT_VERSION}"
+    testImplementation TestDeps.junit
     testImplementation "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
     testImplementation("org.powermock:powermock-api-mockito2:${POWERMOCK_VERSION}") {
         exclude group: 'org.mockito', module: 'mockito-all'
@@ -44,11 +45,11 @@ android {
     def ndkLibs = [['gifimage', [copyGiflib]]]
 
     buildToolsVersion FrescoConfig.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.minSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
     }
 
     sourceSets {

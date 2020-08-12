@@ -11,6 +11,16 @@ object Deps {
     const val javaxAnnotation = "javax.annotation:javax.annotation-api:1.2"
     const val jsr305 = "com.google.code.findbugs:jsr305:3.0.2"
 
+    const val inferAnnotation = "com.facebook.infer.annotation:infer-annotation:0.18.0"
+
+    const val okhttp3 = "com.squareup.okhttp3:okhttp:3.12.1"
+
+    const val volley = "com.android.volley:volley:1.1.0"
+
+    object Bolts {
+        const val tasks = "com.parse.bolts:bolts-tasks:1.4.0"
+    }
+
     object Kotlin {
         const val version = "1.3.72"
 
@@ -18,7 +28,7 @@ object Deps {
     }
 
     object Litho {
-        private const val version = "0.34.0"
+        private const val version = "0.36.0"
 
         const val core = "com.facebook.litho:litho-core:$version"
         const val lithoAnnotations = "com.facebook.litho:litho-annotations:$version"

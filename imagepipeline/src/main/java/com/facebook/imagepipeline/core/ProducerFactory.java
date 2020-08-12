@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import com.facebook.cache.common.CacheKey;
+import com.facebook.common.internal.Suppliers;
 import com.facebook.common.memory.ByteArrayPool;
 import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.memory.PooledByteBufferFactory;
@@ -69,45 +70,45 @@ public class ProducerFactory {
   private static final int MAX_SIMULTANEOUS_REQUESTS = 5;
 
   // Local dependencies
-  private ContentResolver mContentResolver;
-  private Resources mResources;
-  private AssetManager mAssetManager;
+  protected ContentResolver mContentResolver;
+  protected Resources mResources;
+  protected AssetManager mAssetManager;
 
   // Decode dependencies
-  private final ByteArrayPool mByteArrayPool;
-  private final ImageDecoder mImageDecoder;
-  private final ProgressiveJpegConfig mProgressiveJpegConfig;
-  private final boolean mDownsampleEnabled;
-  private final boolean mResizeAndRotateEnabledForNetwork;
-  private final boolean mDecodeCancellationEnabled;
+  protected final ByteArrayPool mByteArrayPool;
+  protected final ImageDecoder mImageDecoder;
+  protected final ProgressiveJpegConfig mProgressiveJpegConfig;
+  protected final boolean mDownsampleEnabled;
+  protected final boolean mResizeAndRotateEnabledForNetwork;
+  protected final boolean mDecodeCancellationEnabled;
 
   // Dependencies used by multiple steps
-  private final ExecutorSupplier mExecutorSupplier;
-  private final PooledByteBufferFactory mPooledByteBufferFactory;
+  protected final ExecutorSupplier mExecutorSupplier;
+  protected final PooledByteBufferFactory mPooledByteBufferFactory;
 
   // Cache dependencies
-  private final BufferedDiskCache mDefaultBufferedDiskCache;
-  private final BufferedDiskCache mSmallImageBufferedDiskCache;
-  private final MemoryCache<CacheKey, PooledByteBuffer> mEncodedMemoryCache;
-  private final MemoryCache<CacheKey, CloseableImage> mBitmapMemoryCache;
-  private final CacheKeyFactory mCacheKeyFactory;
-  private final BoundedLinkedHashSet<CacheKey> mEncodedMemoryCacheHistory;
-  private final BoundedLinkedHashSet<CacheKey> mDiskCacheHistory;
+  protected final BufferedDiskCache mDefaultBufferedDiskCache;
+  protected final BufferedDiskCache mSmallImageBufferedDiskCache;
+  protected final MemoryCache<CacheKey, PooledByteBuffer> mEncodedMemoryCache;
+  protected final MemoryCache<CacheKey, CloseableImage> mBitmapMemoryCache;
+  protected final CacheKeyFactory mCacheKeyFactory;
+  protected final BoundedLinkedHashSet<CacheKey> mEncodedMemoryCacheHistory;
+  protected final BoundedLinkedHashSet<CacheKey> mDiskCacheHistory;
 
   // Postproc dependencies
-  private final PlatformBitmapFactory mPlatformBitmapFactory;
+  protected final PlatformBitmapFactory mPlatformBitmapFactory;
 
   // BitmapPrepare dependencies
-  private final int mBitmapPrepareToDrawMinSizeBytes;
-  private final int mBitmapPrepareToDrawMaxSizeBytes;
-  private boolean mBitmapPrepareToDrawForPrefetch;
+  protected final int mBitmapPrepareToDrawMinSizeBytes;
+  protected final int mBitmapPrepareToDrawMaxSizeBytes;
+  protected boolean mBitmapPrepareToDrawForPrefetch;
 
   // Core factory dependencies
-  private final CloseableReferenceFactory mCloseableReferenceFactory;
+  protected final CloseableReferenceFactory mCloseableReferenceFactory;
 
-  private final int mMaxBitmapSize;
+  protected final int mMaxBitmapSize;
 
-  private final boolean mKeepCancelledFetchAsLowPriority;
+  protected final boolean mKeepCancelledFetchAsLowPriority;
 
   public ProducerFactory(
       Context context,
@@ -130,7 +131,8 @@ public class ProducerFactory {
       boolean bitmapPrepareToDrawForPrefetch,
       int maxBitmapSize,
       CloseableReferenceFactory closeableReferenceFactory,
-      boolean keepCancelledFetchAsLowPriority) {
+      boolean keepCancelledFetchAsLowPriority,
+      int trackedKeysSize) {
     mContentResolver = context.getApplicationContext().getContentResolver();
     mResources = context.getApplicationContext().getResources();
     mAssetManager = context.getApplicationContext().getAssets();
@@ -151,8 +153,8 @@ public class ProducerFactory {
     mSmallImageBufferedDiskCache = smallImageBufferedDiskCache;
     mCacheKeyFactory = cacheKeyFactory;
     mPlatformBitmapFactory = platformBitmapFactory;
-    mEncodedMemoryCacheHistory = new BoundedLinkedHashSet<>(20);
-    mDiskCacheHistory = new BoundedLinkedHashSet<>(20);
+    mEncodedMemoryCacheHistory = new BoundedLinkedHashSet<>(trackedKeysSize);
+    mDiskCacheHistory = new BoundedLinkedHashSet<>(trackedKeysSize);
 
     mBitmapPrepareToDrawMinSizeBytes = bitmapPrepareToDrawMinSizeBytes;
     mBitmapPrepareToDrawMaxSizeBytes = bitmapPrepareToDrawMaxSizeBytes;
@@ -204,7 +206,9 @@ public class ProducerFactory {
         mDecodeCancellationEnabled,
         inputProducer,
         mMaxBitmapSize,
-        mCloseableReferenceFactory);
+        mCloseableReferenceFactory,
+        null,
+        Suppliers.BOOLEAN_FALSE);
   }
 
   public DiskCacheReadProducer newDiskCacheReadProducer(Producer<EncodedImage> inputProducer) {
@@ -341,7 +345,7 @@ public class ProducerFactory {
     return new SwallowResultProducer<T>(inputProducer);
   }
 
-  public <T> ThreadHandoffProducer<T> newBackgroundThreadHandoffProducer(
+  public <T> Producer<T> newBackgroundThreadHandoffProducer(
       Producer<T> inputProducer, ThreadHandoffProducerQueue inputThreadHandoffProducerQueue) {
     return new ThreadHandoffProducer<T>(inputProducer, inputThreadHandoffProducerQueue);
   }

@@ -7,7 +7,6 @@
 
 package com.facebook.imagepipeline.producers;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.StringDef;
 import com.facebook.imagepipeline.common.Priority;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
@@ -32,6 +31,9 @@ public interface ProducerContext {
   @StringDef({
     ExtraKeys.ORIGIN,
     ExtraKeys.ORIGIN_SUBCATEGORY,
+    ExtraKeys.NORMALIZED_URI,
+    ExtraKeys.SOURCE_URI,
+    ExtraKeys.IMAGE_FORMAT,
     ExtraKeys.ENCODED_WIDTH,
     ExtraKeys.ENCODED_HEIGHT,
     ExtraKeys.ENCODED_SIZE,
@@ -41,6 +43,9 @@ public interface ProducerContext {
   @interface ExtraKeys {
     String ORIGIN = "origin";
     String ORIGIN_SUBCATEGORY = "origin_sub";
+    String SOURCE_URI = "uri_source";
+    String NORMALIZED_URI = "uri_norm";
+    String IMAGE_FORMAT = "image_format";
     String ENCODED_WIDTH = "encoded_width";
     String ENCODED_HEIGHT = "encoded_height";
     String ENCODED_SIZE = "encoded_size";
@@ -92,9 +97,9 @@ public interface ProducerContext {
 
   void setEncodedImageOrigin(EncodedImageOrigin encodedImageOrigin);
 
-  <E> void setExtra(@ExtraKeys String key, @Nullable E value);
+  <E> void setExtra(String key, @Nullable E value);
 
-  void putExtras(@NonNull Map<String, ?> extras);
+  void putExtras(@Nullable Map<String, ?> extras);
 
   @Nullable
   <E> E getExtra(String key);

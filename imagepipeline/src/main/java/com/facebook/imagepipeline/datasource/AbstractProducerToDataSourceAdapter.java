@@ -43,6 +43,7 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
     }
     mSettableProducerContext = settableProducerContext;
     mRequestListener = requestListener;
+    setInitialExtras();
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.beginSection("AbstractProducerToDataSourceAdapter()->onRequestStart");
     }
@@ -101,7 +102,7 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
   }
 
   private void onFailureImpl(Throwable throwable) {
-    if (super.setFailure(throwable)) {
+    if (super.setFailure(throwable, getExtras(mSettableProducerContext))) {
       mRequestListener.onRequestFailure(mSettableProducerContext, throwable);
     }
   }
@@ -125,5 +126,9 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
       mSettableProducerContext.cancel();
     }
     return true;
+  }
+
+  private void setInitialExtras() {
+    setExtras(mSettableProducerContext.getExtras());
   }
 }

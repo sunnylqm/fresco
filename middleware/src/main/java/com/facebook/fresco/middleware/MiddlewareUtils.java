@@ -1,9 +1,9 @@
 package com.facebook.fresco.middleware;
 
+import android.graphics.PointF;
 import android.graphics.Rect;
-import com.facebook.datasource.DataSource;
+import android.net.Uri;
 import com.facebook.fresco.ui.common.ControllerListener2.Extras;
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -12,26 +12,32 @@ public class MiddlewareUtils {
   public static Extras obtainExtras(
       Map<String, Object> componentAttribution,
       Map<String, Object> shortcutAttribution,
-      @Nullable DataSource<?> dataSource,
-      @Nullable Rect viewportDimensions) {
+      @Nullable Map<String, Object> dataSourceExtras,
+      @Nullable Rect viewportDimensions,
+      @Nullable String scaleType,
+      @Nullable PointF focusPoint,
+      @Nullable Map<String, Object> imageExtras,
+      @Nullable Object callerContext,
+      @Nullable Uri mainUri) {
     final Extras extras = new Extras();
-    extras.view = new HashMap<>();
-
-    extras.view.putAll(componentAttribution);
 
     if (viewportDimensions != null) {
-      extras.view.put("viewport_width", viewportDimensions.width());
-      extras.view.put("viewport_height", viewportDimensions.height());
-    } else {
-      extras.view.put("viewport_width", -1);
-      extras.view.put("viewport_height", -1);
+      extras.viewportWidth = viewportDimensions.width();
+      extras.viewportHeight = viewportDimensions.height();
+    }
+    extras.scaleType = scaleType;
+    if (focusPoint != null) {
+      extras.focusX = focusPoint.x;
+      extras.focusY = focusPoint.y;
     }
 
-    if (dataSource != null) {
-      extras.pipe = dataSource.getExtras();
-    } else {
-      extras.view.putAll(shortcutAttribution);
-    }
+    extras.callerContext = callerContext;
+    extras.mainUri = mainUri;
+
+    extras.datasourceExtras = dataSourceExtras;
+    extras.imageExtras = imageExtras;
+    extras.shortcutExtras = shortcutAttribution;
+    extras.componentExtras = componentAttribution;
 
     return extras;
   }

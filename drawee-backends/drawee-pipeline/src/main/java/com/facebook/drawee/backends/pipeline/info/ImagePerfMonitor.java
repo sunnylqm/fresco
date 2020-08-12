@@ -22,8 +22,8 @@ import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.imagepipeline.image.ImageInfo;
 import com.facebook.imagepipeline.listener.ForwardingRequestListener;
 import com.facebook.imagepipeline.request.ImageRequest;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 
 public class ImagePerfMonitor implements ImagePerfNotifier {
@@ -84,7 +84,7 @@ public class ImagePerfMonitor implements ImagePerfNotifier {
         mPipelineDraweeController.removeImageOriginListener(mImageOriginListener);
       }
       if (mImagePerfControllerListener2 != null) {
-        mPipelineDraweeController.removeControllerListener2();
+        mPipelineDraweeController.removeControllerListener2(mImagePerfControllerListener2);
       }
       if (mForwardingRequestListener != null) {
         mPipelineDraweeController.removeRequestListener(mForwardingRequestListener);
@@ -97,7 +97,7 @@ public class ImagePerfMonitor implements ImagePerfNotifier {
       return;
     }
     if (mImagePerfDataListeners == null) {
-      mImagePerfDataListeners = new LinkedList<>();
+      mImagePerfDataListeners = new CopyOnWriteArrayList<>();
     }
     mImagePerfDataListeners.add(imagePerfDataListener);
   }

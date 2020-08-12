@@ -6,6 +6,7 @@
  */
 
 import com.facebook.fresco.buildsrc.Deps
+import com.facebook.fresco.buildsrc.TestDeps
 
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
@@ -21,11 +22,11 @@ dependencies {
     api project(':memory-types:nativememory')
     api project(':memory-types:simple')
     api project(':animated-drawable')
-    implementation "com.parse.bolts:bolts-tasks:${BOLTS_ANDROID_VERSION}"
+    implementation Deps.Bolts.tasks
 
     testImplementation project(':animated-base-test')
     testImplementation project(':imagepipeline-test')
-    testImplementation "junit:junit:${JUNIT_VERSION}"
+    testImplementation TestDeps.junit
     testImplementation "org.easytesting:fest-assert-core:${FEST_ASSERT_CORE_VERSION}"
     testImplementation "org.mockito:mockito-core:${MOCKITO_CORE_VERSION}"
     testImplementation("org.powermock:powermock-api-mockito2:${POWERMOCK_VERSION}") {
@@ -44,11 +45,11 @@ apply from: rootProject.file('release.gradle')
 android {
 
     buildToolsVersion FrescoConfig.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.minSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
     }
     lintOptions {
         abortOnError false

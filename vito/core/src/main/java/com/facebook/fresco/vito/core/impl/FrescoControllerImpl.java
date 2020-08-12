@@ -26,22 +26,23 @@ import com.facebook.fresco.middleware.MiddlewareUtils;
 import com.facebook.fresco.ui.common.ControllerListener2;
 import com.facebook.fresco.ui.common.ControllerListener2.Extras;
 import com.facebook.fresco.ui.common.DimensionsInfo;
+import com.facebook.fresco.ui.common.MultiUriHelper;
 import com.facebook.fresco.vito.core.FrescoContext;
 import com.facebook.fresco.vito.core.FrescoController;
+import com.facebook.fresco.vito.core.FrescoDrawable;
 import com.facebook.fresco.vito.core.FrescoExperiments;
 import com.facebook.fresco.vito.core.FrescoState;
 import com.facebook.fresco.vito.core.Hierarcher;
 import com.facebook.fresco.vito.core.VitoUtils;
 import com.facebook.fresco.vito.core.impl.debug.DebugOverlayFactory;
+import com.facebook.fresco.vito.listener.ForwardingImageListener;
 import com.facebook.fresco.vito.listener.ImageListener;
 import com.facebook.fresco.vito.listener.impl.AutoPlayImageListener;
-import com.facebook.fresco.vito.listener.impl.ForwardingImageListener;
 import com.facebook.fresco.vito.options.ImageOptions;
 import com.facebook.imagepipeline.common.ResizeOptions;
 import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.imagepipeline.image.HasImageMetadata;
 import com.facebook.imagepipeline.image.ImageInfo;
-import com.facebook.imagepipeline.image.OriginalEncodedImageInfo;
 import com.facebook.imagepipeline.listener.RequestListener;
 import com.facebook.imagepipeline.multiuri.MultiUri;
 import com.facebook.imagepipeline.producers.InternalProducerListener;
@@ -58,6 +59,7 @@ public class FrescoControllerImpl implements FrescoController {
       ImmutableMap.<String, Object>of("component_tag", "vito1");
   private static final Map<String, Object> SHORTCUT_EXTRAS =
       ImmutableMap.<String, Object>of("origin", "memory_bitmap", "origin_sub", "shortcut");
+  private static final Extras ON_SUBMIT_EXTRAS = Extras.of(COMPONENT_EXTRAS);
 
   private final FrescoContext mFrescoContext;
   private final DebugOverlayFactory mDebugOverlayFactory;
@@ -328,7 +330,14 @@ public class FrescoControllerImpl implements FrescoController {
 
       if (mControllerListener2 != null) {
         mControllerListener2.onSubmit(
-            VitoUtils.getStringId(frescoState.getId()), frescoState.getCallerContext());
+            VitoUtils.getStringId(frescoState.getId()),
+            frescoState.getCallerContext(),
+            obtainExtras(
+                null,
+                null,
+                frescoState.getFrescoDrawable(),
+                frescoState.getCallerContext(),
+                getMainUri(frescoState)));
       }
       frescoState.onSubmit(frescoState.getId(), frescoState.getCallerContext());
 
@@ -451,14 +460,28 @@ public class FrescoControllerImpl implements FrescoController {
     }
   }
 
+  private @Nullable Uri getMainUri(FrescoState frescoState) {
+    ImageRequest highRes, lowRes = null;
+    ImageRequest[] firstAvailable = null;
+    MultiUri multiUri = frescoState.getMultiUri();
+    if (multiUri == null) {
+      highRes = frescoState.getImageRequest();
+    } else {
+      highRes = multiUri.getHighResImageRequest();
+      lowRes = multiUri.getLowResImageRequest();
+      firstAvailable = multiUri.getMultiImageRequests();
+    }
+    return MultiUriHelper.getMainUri(
+        highRes, lowRes, firstAvailable, ImageRequest.REQUEST_TO_URI_FN);
+  }
+
   private DataSource<CloseableReference<CloseableImage>> createDataSource(FrescoState frescoState) {
     if (frescoState.getUri() != null) {
       return fireOffRequest(frescoState);
     } else {
-      return MultiUri.getMultiUriDatasourceSupplier(
+      return ImagePipelineMultiUriHelper.getMultiUriDatasourceSupplier(
               mFrescoContext.getImagePipeline(),
               frescoState.getMultiUri(),
-              frescoState.getImageRequest(),
               frescoState.getCallerContext(),
               frescoState.getRequestListener(),
               frescoState.getStringId())
@@ -484,7 +507,7 @@ public class FrescoControllerImpl implements FrescoController {
     } else {
       setupRequestListener(frescoState, frescoState.getImageRequest());
       dataSource =
-          MultiUri.getImageRequestDataSource(
+          ImagePipelineMultiUriHelper.getImageRequestDataSource(
               mFrescoContext.getImagePipeline(),
               frescoState.getImageRequest(),
               frescoState.getCallerContext(),
@@ -514,6 +537,9 @@ public class FrescoControllerImpl implements FrescoController {
     }
     CloseableReference.closeSafely(frescoState.getCachedImage());
 
+    if (mControllerListener2 != null) {
+      mControllerListener2.onRelease(VitoUtils.getStringId(frescoState.getId()), null);
+    }
     frescoState.onRelease(frescoState.getId());
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.endSection();
@@ -549,6 +575,17 @@ public class FrescoControllerImpl implements FrescoController {
             .getHierarcher()
             .buildErrorDrawable(frescoState.getResources(), frescoState.getImageOptions());
     displayErrorImage(frescoState, errorDrawable);
+    if (mControllerListener2 != null) {
+      mControllerListener2.onFailure(
+          VitoUtils.getStringId(frescoState.getId()),
+          dataSource.getFailureCause(),
+          obtainExtras(
+              dataSource,
+              null,
+              frescoState.getFrescoDrawable(),
+              frescoState.getCallerContext(),
+              null));
+    }
     frescoState.onFailure(frescoState.getId(), errorDrawable, dataSource.getFailureCause());
   }
 
@@ -621,6 +658,17 @@ public class FrescoControllerImpl implements FrescoController {
                 .getHierarcher()
                 .buildErrorDrawable(frescoState.getResources(), frescoState.getImageOptions());
         displayErrorImage(frescoState, errorDrawable);
+        if (mControllerListener2 != null) {
+          mControllerListener2.onFailure(
+              VitoUtils.getStringId(frescoState.getId()),
+              null,
+              obtainExtras(
+                  dataSource,
+                  null,
+                  frescoState.getFrescoDrawable(),
+                  frescoState.getCallerContext(),
+                  null));
+        }
         frescoState.onFailure(frescoState.getId(), errorDrawable, null);
         return;
       }
@@ -644,7 +692,14 @@ public class FrescoControllerImpl implements FrescoController {
 
       if (mControllerListener2 != null) {
         mControllerListener2.onFinalImageSet(
-            VitoUtils.getStringId(frescoState.getId()), closeableImage, obtainExtras(dataSource));
+            VitoUtils.getStringId(frescoState.getId()),
+            closeableImage,
+            obtainExtras(
+                dataSource,
+                closeableImage,
+                frescoState.getFrescoDrawable(),
+                frescoState.getCallerContext(),
+                null));
       }
       frescoState.onFinalImageSet(
           frescoState.getId(), frescoState.getImageOrigin(), closeableImage, actualDrawable);
@@ -706,12 +761,6 @@ public class FrescoControllerImpl implements FrescoController {
           } else {
             int encodedImageWidth = -1;
             int encodedImageHeight = -1;
-            OriginalEncodedImageInfo encodedImageInfo =
-                ((HasImageMetadata) info).getOriginalEncodedImageInfo();
-            if (encodedImageInfo != null) {
-              encodedImageWidth = encodedImageInfo.getWidth();
-              encodedImageHeight = encodedImageInfo.getHeight();
-            }
             DimensionsInfo dimensionsInfo =
                 new DimensionsInfo(
                     viewWidth,
@@ -732,7 +781,20 @@ public class FrescoControllerImpl implements FrescoController {
   }
 
   private static Extras obtainExtras(
-      @Nullable DataSource<CloseableReference<CloseableImage>> dataSource) {
-    return MiddlewareUtils.obtainExtras(COMPONENT_EXTRAS, SHORTCUT_EXTRAS, dataSource, null);
+      @Nullable DataSource<CloseableReference<CloseableImage>> dataSource,
+      @Nullable CloseableImage closeableImage,
+      @Nullable FrescoDrawable frescoDrawable,
+      @Nullable Object callerContext,
+      @Nullable Uri mainUri) {
+    return MiddlewareUtils.obtainExtras(
+        COMPONENT_EXTRAS,
+        SHORTCUT_EXTRAS,
+        dataSource == null ? null : dataSource.getExtras(),
+        frescoDrawable == null ? null : frescoDrawable.getViewportDimensions(),
+        String.valueOf(frescoDrawable == null ? null : frescoDrawable.getActualImageScaleType()),
+        frescoDrawable == null ? null : frescoDrawable.getActualImageFocusPoint(),
+        closeableImage == null ? null : closeableImage.getExtras(),
+        callerContext,
+        mainUri);
   }
 }
